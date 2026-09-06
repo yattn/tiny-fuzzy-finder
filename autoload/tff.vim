@@ -67,6 +67,7 @@ export def Open(): void
     var id = popup_create([], {
         filter: funcref('Filter', [ctx]),
         border: [],
+        padding: [0, 1, 0, 1],
         minwidth: &columns / 2,
         maxheight: &lines / 2,
     })
