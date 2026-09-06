@@ -1,11 +1,11 @@
 vim9script
 
-# root配下のファイルを列挙する。ディレクトリは除外し、/.git/ 配下のみ無視する。
+# root配下のファイルを列挙する。ディレクトリは除外し、/.git/ と /.svn/ 配下のみ無視する。
 # 空クエリ時の表示安定のためソートする。これ以外の無視ルールは入れない。
 def Candidates(root: string): list<string>
     var all = map(globpath(root, '**/{*,.*}', 0, 1),
         (_, v): string => fnamemodify(v, ':.'))
-    return sort(filter(all, (_, v): bool => stridx(v, '/.git/') < 0 && !isdirectory(v)))
+    return sort(filter(all, (_, v): bool => stridx(v, '/.git/') < 0 && stridx(v, '/.svn/') < 0 && !isdirectory(v)))
 enddef
 
 # 絞り込み結果 (最大20件)。副作用なし。ランキングは matchfuzzy 任せ。

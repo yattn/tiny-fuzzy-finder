@@ -48,6 +48,8 @@ execute 'cd' fnameescape('test/fixture')
 # .git配下の除外を見るためだけに作る (gitは '.git' を含むパスを管理できないため動的生成)。
 mkdir('.git', 'p')
 writefile(['ignored'], '.git/ignored.txt')
+mkdir('.svn', 'p')
+writefile(['ignored'], '.svn/entries')
 
 # 1. 初期表示: ファイルのみ (ディレクトリと.git配下を除外)、先頭行に '> ' マーカー
 TryTff()
@@ -61,6 +63,7 @@ if id != 0
             'lists files incl. dotfiles: ' .. string(init))
         Ok(marks == ['> ', '  ', '  ', '  ', '  '], 'marker on first item: ' .. string(marks))
         delete('.git', 'rf')
+        delete('.svn', 'rf')
 
         # 2. 入力で絞り込み ('b' を含むのは sub/b.txt のみ)、タイトルにクエリ表示
         var F: any = popup_getoptions(id).filter
