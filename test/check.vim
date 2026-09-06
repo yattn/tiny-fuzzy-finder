@@ -56,10 +56,10 @@ if id != 0
     try
         var init = Lines(id)
         var marks = map(copy(init[1 :]), (_, v): string => v[: 1])
-        Ok(len(init) == 5 && init[0] ==# '> ', 'prompt line first: ' .. string(init))
-        Ok(sort(Strip(init[1 :])) == ['.hidden_a', 'a.txt', 'sub/.hidden_b', 'sub/b.txt'],
+        Ok(len(init) == 6 && init[0] ==# '> ', 'prompt line first: ' .. string(init))
+        Ok(sort(Strip(init[1 :])) == ['.hidden_a', 'a.txt', 'sub/.hidden_b', 'sub/b.txt', '日本語.txt'],
             'lists files incl. dotfiles: ' .. string(init))
-        Ok(marks == ['> ', '  ', '  ', '  '], 'marker on first item: ' .. string(marks))
+        Ok(marks == ['> ', '  ', '  ', '  ', '  '], 'marker on first item: ' .. string(marks))
         delete('.git', 'rf')
 
         # 2. 入力で絞り込み ('b' を含むのは sub/b.txt のみ)、タイトルにクエリ表示
@@ -80,12 +80,18 @@ if id != 0
         call(F, [id, "\<c-u>"])
         Ok(Lines(id) == init, 'C-u clears query')
 
+        # 3c. マルチバイト入力とBS (文字単位削除の確認)
+        call(F, [id, '本'])
+        Ok(Lines(id) == ['> 本', '> 日本語.txt'], 'mb input narrows: ' .. string(Lines(id)))
+        call(F, [id, "\<bs>"])
+        Ok(Lines(id) == init, 'mb BS restores list')
+
         # 4. ↓/↑でマーカー移動
         call(F, [id, "\<down>"])
         var moved = Lines(id)
         marks = map(copy(moved[1 :]), (_, v): string => v[: 1])
-        Ok(len(moved) == 5 && moved[0] ==# '> ', 'prompt kept: ' .. string(moved))
-        Ok(marks == ['  ', '> ', '  ', '  '], 'down moves marker: ' .. string(marks))
+        Ok(len(moved) == 6 && moved[0] ==# '> ', 'prompt kept: ' .. string(moved))
+        Ok(marks == ['  ', '> ', '  ', '  ', '  '], 'down moves marker: ' .. string(marks))
         call(F, [id, "\<up>"])
         Ok(Lines(id) == init, 'up restores marker')
 
