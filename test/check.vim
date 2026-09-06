@@ -54,18 +54,18 @@ var id = PopupId()
 if id != 0
     try
         var init = Lines(id)
-        Ok(len(init) == 2 && sort(Strip(init)) == ['a.txt', 'sub/b.txt'],
+        Ok(len(init) == 3 && init[0] ==# '> ', 'prompt line first: ' .. string(init))
+        Ok(len(init) == 3 && sort(Strip(init[1 :])) == ['a.txt', 'sub/b.txt'],
             'lists files only: ' .. string(init))
-        Ok(len(init) == 2 && init[0][: 1] ==# '> ' && init[1][: 1] ==# '  ',
-            'marker on first line only: ' .. string(init))
+        Ok(len(init) == 3 && init[1][: 1] ==# '> ' && init[2][: 1] ==# '  ',
+            'marker on first item only: ' .. string(init))
         delete('.git', 'rf')
 
         # 2. 入力で絞り込み ('b' を含むのは sub/b.txt のみ)、タイトルにクエリ表示
         var F: any = popup_getoptions(id).filter
         call(F, [id, 'b'])
         var narrowed = Lines(id)
-        Ok(narrowed == ['> sub/b.txt'], 'narrows to match: ' .. string(narrowed))
-        Ok(popup_getoptions(id).title ==# '> b', 'query in title')
+        Ok(narrowed == ['> b', '> sub/b.txt'], 'narrows to match: ' .. string(narrowed))
 
         # 3. BSで復帰
         call(F, [id, "\<bs>"])
@@ -74,13 +74,13 @@ if id != 0
         # 4. ↓/↑でマーカー移動
         call(F, [id, "\<down>"])
         var moved = Lines(id)
-        Ok(len(moved) == 2 && moved[0][: 1] ==# '  ' && moved[1][: 1] ==# '> ',
+        Ok(len(moved) == 3 && moved[0] ==# '> ' && moved[1][: 1] ==# '  ' && moved[2][: 1] ==# '> ',
             'down moves marker: ' .. string(moved))
         call(F, [id, "\<up>"])
         Ok(Lines(id) == init, 'up restores marker')
 
         # 5. Enterで先頭行のファイルを開く
-        var first = empty(init) ? '' : Strip(init)[0]
+        var first = len(init) < 2 ? '' : Strip(init[1 :])[0]
         call(F, [id, "\<cr>"])
         Ok(empty(popup_list()), 'enter closes popup')
         Ok(expand('%:.') ==# first, 'enter opens selected: ' .. expand('%:.') .. ' != ' .. first)
@@ -111,7 +111,7 @@ execute 'cd' fnameescape(dir)
 TryTff()
 id = PopupId()
 if id != 0
-    Ok(len(Lines(id)) == 20, 'shows 20 lines max')
+    Ok(len(Lines(id)) == 21, 'prompt + 20 items max')
 endif
 popup_clear()
 execute 'cd' fnameescape(saved)

@@ -16,12 +16,15 @@ def View(ctx: dict<any>): list<string>
     return matchfuzzy(ctx.all, ctx.query)[: 19]
 enddef
 
-# View() を描画する。view自体は保持せず、都度作り直す。
+# 先頭行を入力欄、以降を選択肢として描画する。view自体は保持せず都度作り直す。
 def Render(ctx: dict<any>, id: number): void
-    var lines = map(copy(View(ctx)),
-        (i, v): string => (i == ctx.sel ? '> ' : '  ') .. v)
-    popup_settext(id, empty(lines) ? ['(no match)'] : lines)
-    popup_setoptions(id, {title: '> ' .. ctx.query})
+    var view = View(ctx)
+    var lines = ['> ' .. ctx.query]
+    lines += map(copy(view), (i, v): string => (i == ctx.sel ? '> ' : '  ') .. v)
+    if empty(view)
+        lines->add('(no match)')
+    endif
+    popup_settext(id, lines)
 enddef
 
 # 全キーを自前で処理し、つねに true を返す (popup側の既定動作に依存しない)。
@@ -63,7 +66,6 @@ export def Open(): void
     var ctx: dict<any> = {query: '', all: Candidates(), sel: 0}
     var id = popup_create([], {
         filter: funcref('Filter', [ctx]),
-        title: '> ',
         border: [],
         minwidth: &columns / 2,
         maxheight: &lines / 2,
