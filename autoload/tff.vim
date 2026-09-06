@@ -1,11 +1,11 @@
 vim9script
 
-# cwd配下のファイルを列挙する。ディレクトリは除外し、/.git/ 配下のみ無視する。
-# これ以外の無視ルールは v1 の割り切りとして入れない。
-def Candidates(): list<string>
-    var all = map(globpath(getcwd(), '**/*', 0, 1),
+# root配下のファイルを列挙する。ディレクトリは除外し、/.git/ 配下のみ無視する。
+# 空クエリ時の表示安定のためソートする。これ以外の無視ルールは入れない。
+def Candidates(root: string): list<string>
+    var all = map(globpath(root, '**/{*,.*}', 0, 1),
         (_, v): string => fnamemodify(v, ':.'))
-    return filter(all, (_, v): bool => stridx(v, '/.git/') < 0 && !isdirectory(v))
+    return sort(filter(all, (_, v): bool => stridx(v, '/.git/') < 0 && !isdirectory(v)))
 enddef
 
 # 絞り込み結果 (最大20件)。副作用なし。ランキングは matchfuzzy 任せ。
@@ -54,6 +54,10 @@ def Filter(ctx: dict<any>, id: number, key: string): bool
             ctx.sel = 0
             Render(ctx, id)
         endif
+    elseif key ==# "\<c-u>" && ctx.query !=# ''
+        ctx.query = ''
+        ctx.sel = 0
+        Render(ctx, id)
     elseif strchars(key) == 1 && char2nr(key) >= 0x20
         ctx.query ..= key
         ctx.sel = 0
@@ -62,8 +66,8 @@ def Filter(ctx: dict<any>, id: number, key: string): bool
     return true
 enddef
 
-export def Open(): void
-    var ctx: dict<any> = {query: '', all: Candidates(), sel: 0}
+export def Open(dir = ''): void
+    var ctx: dict<any> = {query: '', all: Candidates(dir ==# '' ? getcwd() : dir), sel: 0}
     var id = popup_create([], {
         filter: funcref('Filter', [ctx]),
         border: [],

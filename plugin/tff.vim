@@ -9,4 +9,4 @@ vim9script
 
 g:loaded_tff = true
 
-command! -nargs=0 -bar Tff call tff#Open()
+command! -nargs=? -complete=dir -bar Tff call tff#Open(<f-args>)

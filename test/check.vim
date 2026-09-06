@@ -43,6 +43,7 @@ def TryTff(): void
     endtry
 enddef
 
+var root = getcwd()
 execute 'cd' fnameescape('test/fixture')
 # .git配下の除外を見るためだけに作る (gitは '.git' を含むパスを管理できないため動的生成)。
 mkdir('.git', 'p')
@@ -54,28 +55,37 @@ var id = PopupId()
 if id != 0
     try
         var init = Lines(id)
-        Ok(len(init) == 3 && init[0] ==# '> ', 'prompt line first: ' .. string(init))
-        Ok(len(init) == 3 && sort(Strip(init[1 :])) == ['a.txt', 'sub/b.txt'],
-            'lists files only: ' .. string(init))
-        Ok(len(init) == 3 && init[1][: 1] ==# '> ' && init[2][: 1] ==# '  ',
-            'marker on first item only: ' .. string(init))
+        var marks = map(copy(init[1 :]), (_, v): string => v[: 1])
+        Ok(len(init) == 5 && init[0] ==# '> ', 'prompt line first: ' .. string(init))
+        Ok(sort(Strip(init[1 :])) == ['.hidden_a', 'a.txt', 'sub/.hidden_b', 'sub/b.txt'],
+            'lists files incl. dotfiles: ' .. string(init))
+        Ok(marks == ['> ', '  ', '  ', '  '], 'marker on first item: ' .. string(marks))
         delete('.git', 'rf')
 
         # 2. 入力で絞り込み ('b' を含むのは sub/b.txt のみ)、タイトルにクエリ表示
         var F: any = popup_getoptions(id).filter
         call(F, [id, 'b'])
         var narrowed = Lines(id)
-        Ok(narrowed == ['> b', '> sub/b.txt'], 'narrows to match: ' .. string(narrowed))
+        Ok(len(narrowed) == 3 && narrowed[0] ==# '> b',
+            'prompt + 2 matches: ' .. string(narrowed))
+        Ok(sort(Strip(narrowed[1 :])) == ['sub/.hidden_b', 'sub/b.txt'],
+            'narrows to match: ' .. string(narrowed))
 
         # 3. BSで復帰
         call(F, [id, "\<bs>"])
         Ok(Lines(id) == init, 'BS restores list')
 
+        # 3b. C-uで全消し
+        call(F, [id, 'b'])
+        call(F, [id, "\<c-u>"])
+        Ok(Lines(id) == init, 'C-u clears query')
+
         # 4. ↓/↑でマーカー移動
         call(F, [id, "\<down>"])
         var moved = Lines(id)
-        Ok(len(moved) == 3 && moved[0] ==# '> ' && moved[1][: 1] ==# '  ' && moved[2][: 1] ==# '> ',
-            'down moves marker: ' .. string(moved))
+        marks = map(copy(moved[1 :]), (_, v): string => v[: 1])
+        Ok(len(moved) == 5 && moved[0] ==# '> ', 'prompt kept: ' .. string(moved))
+        Ok(marks == ['  ', '> ', '  ', '  '], 'down moves marker: ' .. string(marks))
         call(F, [id, "\<up>"])
         Ok(Lines(id) == init, 'up restores marker')
 
@@ -116,6 +126,20 @@ endif
 popup_clear()
 execute 'cd' fnameescape(saved)
 delete(dir, 'rf')
+
+# 8. 引数でディレクトリ指定 (表示はcwd相対のまま)
+execute 'cd' fnameescape(root)
+try
+    execute 'Tff test/fixture/sub'
+catch
+    failures->add('FAIL: Tff dir arg: ' .. v:exception)
+endtry
+id = PopupId()
+if id != 0
+    Ok(Lines(id) == ['> ', '> test/fixture/sub/.hidden_b', '  test/fixture/sub/b.txt'],
+        'dir arg lists subdir: ' .. string(Lines(id)))
+endif
+popup_clear()
 
 # 失敗詳細はechoerr+終了コードで返す。writefile(/dev/stderr)はopenを伴い、
 # 書けない環境では例外→Ex放置→ハングするため使わない。詳しくは -V ログで。
