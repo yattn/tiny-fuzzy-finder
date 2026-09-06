@@ -25,6 +25,7 @@
 | `Esc` / `C-c` | 閉じる |
 
 自動テスト: `vim -n -es --cmd "set rtp+=$PWD" -S test/check.vim < /dev/null`（成功時exit 0）
+量産フィクスチャ: `./test/big_fixture.sh`（/tmp/tff-big に約460件生成、手触り確認用）
 
 ## 要らないもの（v1の割り切り）
 
